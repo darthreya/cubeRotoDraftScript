@@ -40,7 +40,7 @@ div.appendChild(clearFilterButton);
 const cubeCobraCollapseMenu = document.getElementsByClassName("collapse navbar-collapse").item(1)
 cubeCobraNavBar.insertBefore(div, cubeCobraCollapseMenu);
 if (localStorage.getItem(currentCubePathKey)) {
-    console.log("loaded things")
+    console.log("Loaded previously used draft")
     textInput.value = localStorage.getItem(currentCubePathKey);
 }
 

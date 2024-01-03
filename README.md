@@ -19,8 +19,8 @@ This script runs locally on your browser and requires the draft sheet to be publ
 ## Usage
 
 1. Open your rotisserie draft google sheet
-2. Copy the spreadsheet id from your url bar.
+2. Copy the spreadsheet id from your url bar OR the whole spreadsheet URL (Note: the sheet must be publicly viewable!)
    ![](./docs/sheet-url.png)
 3. Go to your draft list. (https://cubecobra.com/cube/list/blue-cube)
-4. Paste the spreadsheet id into the input
-5. Press Filter or `Enter` key to display 
+4. Paste the spreadsheet id or URL into the input
+5. Press Filter or `Enter` key to display
