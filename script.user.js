@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Cube Cobra Roto-draft UI Mask
 // @namespace    https://github.com/darthreya/cubeRotoDraftScript
-// @version      0.0.1
+// @version      0.0.2
 // @description  Modifies Cube Cobra's UI to allow users to add a google sheet key for their roto draft and view the picks so far and who it was made by (using either an emoji in the username provided on the sheet). The script relies on the usage of the MTG Cube Rotisserie Draft Google Sheet Template by Anthony Mattox (@ahmattox) of Lucky Paper. 
 // @author       darthreya and dsoskey
 // @match        https://cubecobra.com/cube/list/*
@@ -10,17 +10,6 @@
 // @updateURL    https://raw.githubusercontent.com/darthreya/cubeRotoDraftScript/main/script.user.js
 // @downloadURL  https://raw.githubusercontent.com/darthreya/cubeRotoDraftScript/main/script.user.js
 // ==/UserScript==
-
-/*
-TODOS:
-1. Toggle between default emojis and draft order emojis
-2. Autorefresh control. Toggle on/off
-3. Handle Duplicates (Pretty big deal imo)
-4. Make it "nicer", gotta figure out what conventions exist for these sorta scripts
-5. Make it such that the text input can accept either the whole sheet URL or just the key and parse that URL
-6. Link to README
-
-*/
 
 const pickedSymbol = '✓'
 const cubeNumberOfCards = 2000 // Picked kinda arbitrarily
@@ -61,9 +50,9 @@ let activeBar
 function playerBox(player, place) {
     const node = document.createElement("div")
     const active = player.includes("◈")
-    const activeColor = "red"
+    const activeColor = "crimson"
     node.style = `
-    border: ${active ? "2px":"1px"} solid ${active ? activeColor : "var(--border-dark)"};
+    border: ${active ? "2px":"1px"} ${active ? "dashed" : "solid"} ${active ? activeColor : "var(--border-dark)"};
     align-text: center;
     color: ${active ? activeColor : "var(--text)"};
   `
