@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Cube Cobra Roto-draft UI Mask
 // @namespace    https://github.com/darthreya/cubeRotoDraftScript
-// @version      0.0.2
+// @version      0.0.3
 // @description  Modifies Cube Cobra's UI to allow users to add a google sheet key for their roto draft and view the picks so far and who it was made by (using either an emoji in the username provided on the sheet). The script relies on the usage of the MTG Cube Rotisserie Draft Google Sheet Template by Anthony Mattox (@ahmattox) of Lucky Paper. 
 // @author       darthreya and dsoskey
 // @match        https://cubecobra.com/cube/list/*
@@ -120,20 +120,24 @@ async function onButtonClick() {
         const name = card[card.length - 1]
         return card.length === 6 ? [card[1], name] : [`${card[1]},${card[2]}`, name]
     }));
-    const cubeCobraElements = document.getElementsByClassName('card-list-item_name')
-    for (const cardHTML of cubeCobraElements) {
-        if (!cardsChosenMap.has(cardHTML.innerText)) {
-            cardHTML.innerHTML = `<b>${cardHTML.innerText}</b>`
+    const cubeCobraCardElements = document.getElementsByClassName('card-list-item_name')
+    const cardNameCount = {}
+    for (const cardHTML of cubeCobraCardElements) {
+        cardNameCount[cardHTML.innerText] = (cardNameCount[cardHTML.innerText] || 0) + 1
+        // Follows the same naming convention as the Rotisserie Draft Template
+        const cardName = cardNameCount[cardHTML.innerText] === 1 ? cardHTML.innerText : `${cardHTML.innerText} ${cardNameCount[cardHTML.innerText]}`
+
+        if (!cardsChosenMap.has(cardName)) {
+            cardHTML.innerHTML = `<b>${cardName}</b>`
             continue;
         }
-        const picker = cardsChosenMap.get(cardHTML.innerText)
+        const picker = cardsChosenMap.get(cardName)
         const iconsplit = picker.split(/(\b| )/)
         const maybeIcon = iconsplit[iconsplit.length - 1]
         const icon = /\w/.test(maybeIcon) ? `[${orderMap.get(picker)}]` : maybeIcon
-        cardHTML.innerHTML = `${icon} <s>${cardHTML.innerText}</s>`
+        cardHTML.innerHTML = `${icon} <s>${cardName}</s>`
     }
 }
-
 
 
 filterButton.addEventListener('click', onButtonClick);
