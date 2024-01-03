@@ -14,7 +14,7 @@
 const pickedSymbol = '✓'
 const cubeNumberOfCards = 2000 // Picked kinda arbitrarily
 const currentCubePathKey = `draftSheetKey+${window.location.pathname}`
-
+const googleSheetsURL = 'https://docs.google.com/spreadsheets/d/'
 
 const cubeCobraNavBar = document.getElementsByClassName('container-fluid').item(0)
 const div = document.createElement("div")
@@ -85,15 +85,22 @@ function clearFiltering() {
     activeBar?.remove()
 }
 
+function getSheetKeyFromInput(inputKey) {
+    if (inputKey.includes(googleSheetsURL)) {
+        return inputKey.replace(googleSheetsURL, '').split('/')[0];
+    }
+    return inputKey
+}
+
 async function onButtonClick() {
     clearFiltering()
-    const sheetKey = textInput.value;
+    const sheetKey = getSheetKeyFromInput(textInput.value)
     // store the key for the current filter so it's preserved across refreshes
     localStorage.setItem(currentCubePathKey, sheetKey);
     if (sheetKey === "") {
         return
     }
-    const baseURL = `https://docs.google.com/spreadsheets/d/${sheetKey}/gviz/tq?tqx=out:csv`
+    const baseURL = `${googleSheetsURL}${sheetKey}/gviz/tq?tqx=out:csv`
     const cubeURL = `${baseURL}&sheet=Cube&range=A2:F${cubeNumberOfCards}`
     const playerURL = `${baseURL}&sheet=Draft&range=3:3`
     const ordering = await fetch(playerURL)
