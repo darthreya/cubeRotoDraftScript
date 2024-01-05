@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         Cube Cobra Roto-draft UI Mask
 // @namespace    https://github.com/darthreya/cubeRotoDraftScript
-// @version      0.0.3
+// @version      0.0.4
 // @description  Modifies Cube Cobra's UI to allow users to add a google sheet key for their roto draft and view the picks so far and who it was made by (using either an emoji in the username provided on the sheet). The script relies on the usage of the MTG Cube Rotisserie Draft Google Sheet Template by Anthony Mattox (@ahmattox) of Lucky Paper. 
 // @author       darthreya and dsoskey
 // @match        https://cubecobra.com/cube/list/*
+// @match        https://cubeartisan.net/cube/*/list
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=cubecobra.com
 // @grant        none
 // @updateURL    https://raw.githubusercontent.com/darthreya/cubeRotoDraftScript/main/script.user.js
@@ -15,38 +16,72 @@ const pickedSymbol = '✓'
 const cubeNumberOfCards = 2000 // Picked kinda arbitrarily
 const currentCubePathKey = `draftSheetKey+${window.location.pathname}`
 const googleSheetsURL = 'https://docs.google.com/spreadsheets/d/'
+const host = window.location.host
 
-const cubeCobraNavBar = document.getElementsByClassName('container-fluid').item(0)
-const div = document.createElement("div")
-div.style = "flex-grow: 1;"
+/*
+CubeArtisan Selectors
+parent of list view MuiBox-root
+MuiTypography-body2
+Input parent:
+const pees =
+ */
+const hostToInfo = {
+    "cubeartisan.net": {
+        inputSelector: ".usercontrols > nav",
+        inputSiblingSelector: "collapse navbar-collapse",
+        tableSelector: "MuiBox-root",
+        getCardElements: () => document.getElementsByClassName("MuiBox-root").item(0).getElementsByTagName("p")
+    },
+    "cubecobra.com": {
+        inputSelector: ".container-fluid",
+        inputSiblingSelector: "collapse navbar-collapse",
+        tableSelector: "table-view-container",
+        getCardElements: () => document.getElementsByClassName('card-list-item_name')
+    },
+}
+
+// element references
+let activeBar
+const inputContainer = document.createElement("div")
+inputContainer.style = "flex-grow: 1;"
+
 const textInput = document.createElement("input")
 textInput.type = "text"
 textInput.name = "key"
 textInput.placeholder = "Google sheet draft key"
+textInput.addEventListener('keypress', function(event) {
+    // Check if the key pressed is 'Enter'
+    if (event.key === 'Enter') {
+        // Prevent the default action to avoid submitting the form if in one
+        event.preventDefault();
+        // Trigger the same action as the button click
+        onButtonClick();
+    }
+});
+
 const refreshCheckbox = document.createElement("input")
 refreshCheckbox.type = "checkbox"
 refreshCheckbox.name = "shouldRefresh"
 
-
 const filterButton = document.createElement("button")
 filterButton.type = "button"
 filterButton.innerText = "Filter"
+filterButton.addEventListener('click', onButtonClick);
+
 const clearFilterButton = document.createElement("button")
 clearFilterButton.type = "button"
 clearFilterButton.innerText = "Clear"
-div.appendChild(textInput);
-div.appendChild(filterButton);
-div.appendChild(clearFilterButton);
-const cubeCobraCollapseMenu = document.getElementsByClassName("collapse navbar-collapse").item(1)
-cubeCobraNavBar.insertBefore(div, cubeCobraCollapseMenu);
-if (localStorage.getItem(currentCubePathKey)) {
-    console.log("Loaded previously used draft")
-    textInput.value = localStorage.getItem(currentCubePathKey);
+clearFilterButton.addEventListener('click', clearFiltering);
+
+inputContainer.appendChild(textInput);
+inputContainer.appendChild(filterButton);
+inputContainer.appendChild(clearFilterButton);
+
+function getTable () {
+  return document.getElementsByClassName(hostToInfo[host].tableSelector).item(0)
 }
 
-const table = document.getElementsByClassName("table-view-container").item(0)
-let activeBar
-
+// some of these css vars are cubecobra specific
 function playerBox(player, place) {
     const node = document.createElement("div")
     const active = player.includes("◈")
@@ -76,8 +111,8 @@ function playerBar(players) {
 }
 
 function clearFiltering() {
-    const cubeCobraElements = document.getElementsByClassName('card-list-item_name')
-    for (let cardHTML of cubeCobraElements) {
+    const cardElements = hostToInfo[host].getCardElements()
+    for (let cardHTML of cardElements) {
         if (cardHTML.innerHTML.includes("<b>") || cardHTML.innerHTML.includes("<s>")) {
             cardHTML.innerHTML = cardHTML.innerHTML.match(/>(.*?)</)[1]
         }
@@ -108,8 +143,8 @@ async function onButtonClick() {
         .then(data => data.split(",").map(it => it.trim().slice(1, -1)).filter(it => it.length))
     const orderMap = new Map(ordering.map((it, i) => [it.replace(/◈/g, "").trim(), i+1]))
     activeBar = playerBar(ordering)
+    const table = getTable()
     table.parentElement.insertBefore(activeBar, table)
-
 
     const cards = (await fetch(cubeURL)
         .then(response => response.text())
@@ -120,9 +155,9 @@ async function onButtonClick() {
         const name = card[card.length - 1]
         return card.length === 6 ? [card[1], name] : [`${card[1]},${card[2]}`, name]
     }));
-    const cubeCobraCardElements = document.getElementsByClassName('card-list-item_name')
+    const cardElements = hostToInfo[host].getCardElements()
     const cardNameCount = {}
-    for (const cardHTML of cubeCobraCardElements) {
+    for (const cardHTML of cardElements) {
         cardNameCount[cardHTML.innerText] = (cardNameCount[cardHTML.innerText] || 0) + 1
         // Follows the same naming convention as the Rotisserie Draft Template
         const cardName = cardNameCount[cardHTML.innerText] === 1 ? cardHTML.innerText : `${cardHTML.innerText} ${cardNameCount[cardHTML.innerText]}`
@@ -139,19 +174,44 @@ async function onButtonClick() {
     }
 }
 
-
-filterButton.addEventListener('click', onButtonClick);
-clearFilterButton.addEventListener('click', clearFiltering);
-
-textInput.addEventListener('keypress', function(event) {
-    // Check if the key pressed is 'Enter'
-    if (event.key === 'Enter') {
-        // Prevent the default action to avoid submitting the form if in one
-        event.preventDefault();
-        // Trigger the same action as the button click
-        onButtonClick();
+/**
+ * Attempts to render an element inside the navBar.
+ * @param element to render in navBar
+ * @returns {boolean} true if render failed and needs to be retried.
+ */
+function renderInput(element) {
+    const navBar = document.querySelector(hostToInfo[host].inputSelector)
+    if (navBar === null) {
+        return true
     }
-});
+
+    // If navBar has rendered properly, collapseMenu should be rendered within
+    const collapseMenu = document.getElementsByClassName(hostToInfo[host].inputSiblingSelector).item(1)
+    navBar.insertBefore(element, collapseMenu);
+    if (localStorage.getItem(currentCubePathKey)) {
+        console.log("loaded things")
+        textInput.value = localStorage.getItem(currentCubePathKey);
+    }
+    return false
+}
+
+const MAX_BACKOFF = 1000 * 16
+function attemptRender(element, backoff) {
+    if (backoff > MAX_BACKOFF) {
+        alert("could not render scriptyMcScriptface script successfully")
+        return
+    }
+
+    console.debug("attempting render")
+    const retry = renderInput(element);
+    if (retry) {
+        console.debug(`render failed. backing off for ${backoff} ms then retrying...`)
+        setTimeout(() => {
+            attemptRender(element, backoff * 2)
+        }, backoff)
+    }
+}
+attemptRender(inputContainer, 1000)
 
 const TWO_MINUTES = 1000 * 60 * 2
 setInterval(() => {
