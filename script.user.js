@@ -2,7 +2,7 @@
 // @name         Cube Cobra Roto-draft UI Mask
 // @namespace    https://github.com/darthreya/cubeRotoDraftScript
 // @version      0.0.4
-// @description  Modifies Cube Cobra's UI to allow users to add a google sheet key for their roto draft and view the picks so far and who it was made by (using either an emoji in the username provided on the sheet). The script relies on the usage of the MTG Cube Rotisserie Draft Google Sheet Template by Anthony Mattox (@ahmattox) of Lucky Paper. 
+// @description  Modifies CubeCobra's and CubeArtisan's list view to allow users to add a google sheet key for their roto draft and view the picks so far and who it was made by (using either an emoji in the username provided on the sheet). The script relies on the usage of the MTG Cube Rotisserie Draft Google Sheet Template by Anthony Mattox (@ahmattox) of Lucky Paper.
 // @author       darthreya and dsoskey
 // @match        https://cubecobra.com/cube/list/*
 // @match        https://cubeartisan.net/cube/*/list
@@ -17,20 +17,14 @@ const cubeNumberOfCards = 2000 // Picked kinda arbitrarily
 const currentCubePathKey = `draftSheetKey+${window.location.pathname}`
 const googleSheetsURL = 'https://docs.google.com/spreadsheets/d/'
 const host = window.location.host
-
-/*
-CubeArtisan Selectors
-parent of list view MuiBox-root
-MuiTypography-body2
-Input parent:
-const pees =
- */
 const hostToInfo = {
     "cubeartisan.net": {
         inputSelector: ".usercontrols > nav",
         inputSiblingSelector: "collapse navbar-collapse",
         tableSelector: "MuiBox-root",
-        getCardElements: () => document.getElementsByClassName("MuiBox-root").item(0).getElementsByTagName("p")
+        getCardElements: () => document
+            .getElementsByClassName("MuiBox-root").item(0)
+            .getElementsByTagName("p")
     },
     "cubecobra.com": {
         inputSelector: ".container-fluid",
@@ -81,7 +75,6 @@ function getTable () {
   return document.getElementsByClassName(hostToInfo[host].tableSelector).item(0)
 }
 
-// some of these css vars are cubecobra specific
 function playerBox(player, place) {
     const node = document.createElement("div")
     const active = player.includes("◈")
